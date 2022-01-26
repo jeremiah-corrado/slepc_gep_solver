@@ -15,10 +15,10 @@ void early_exit(int status, const char msg[]) {
 
 std::array<std::string, 4> file_names(std::string prefix) {
     return {
-        prefix + "_a.dat",
-        prefix + "_b.dat",
-        prefix + "_evec.dat",
-        prefix + "_eval.dat",
+        "./tmp/" + prefix + "_a.dat",
+        "./tmp/" + prefix + "_b.dat",
+        "./tmp/" + prefix + "_evec.dat",
+        "./tmp/" + prefix + "_eval.dat",
     };
 }
 
@@ -109,9 +109,9 @@ int main(int argc, char* argv[]) {
     EPSGetConverged(eps, &nconv);
     if (nconv > 0) {
         ierr = EPSGetEigenpair(eps, 0, &eigenvalue_r, &eigenvalue_i, xr, xi);     if (ierr) early_exit(7, "Unable to get Solution");
-        PetscPrintf(PETSC_COMM_WORLD, "eigenvalue: %f", eigenvalue_r);
+        // PetscPrintf(PETSC_COMM_WORLD, "eigenvalue: %f", eigenvalue_r);
     } else {
-        early_exit(7, "Eigenvalue Solver Failed to converge!");
+        early_exit(7, "GEP Solver Failed to converge on target Eigenvalue!");
     }
     EPSDestroy(&eps);
 
