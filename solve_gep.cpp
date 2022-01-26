@@ -1,14 +1,25 @@
 #include "petscviewer.h"
-
 #include <slepceps.h>
 #include <petscsys.h>
 #include <petscmat.h>
 #include <mpi.h>
 
+#include <array>
+#include <string>
+
 void early_exit(int status, const char msg[]) {
     PetscPrintf(PETSC_COMM_WORLD, msg);
     SlepcFinalize();
     exit(status);
+}
+
+std::array<std::string, 4> file_names(std::string prefix) {
+    return {
+        prefix + "_a.dat",
+        prefix + "_b.dat",
+        prefix + "_evec.dat",
+        prefix + "_eval.dat",
+    };
 }
 
 int main(int argc, char* argv[]) {
@@ -21,13 +32,14 @@ int main(int argc, char* argv[]) {
     KSP                     ksp;
     PC                      pc;
     PetscInt                nconv;
+    PetscBool               flg;
+    char                    file_prefix[PETSC_MAX_PATH_LEN];
 
     double eigenvalue_r, eigenvalue_i;
-
-    double target_eval = 1.47;
+    double target_eval = 1.0;
 
     // ------------------------------------------------------------------------------------------------------------------
-    // Basic Setup
+    // Basic Setup and Arguments
     // ------------------------------------------------------------------------------------------------------------------
     int num_threads;
     ierr = SlepcInitialize(&argc, &argv, (char *) 0, NULL); 
@@ -35,6 +47,14 @@ int main(int argc, char* argv[]) {
 
     MPI_Comm_size(PETSC_COMM_WORLD, &num_threads);
     if (num_threads != 1) early_exit(2, "GEP Solver is only setup to use 1 MPI Thread!");
+
+    PetscOptionsGetScalar(NULL, NULL, "-te", &target_eval, &flg);
+    if (!flg) early_exit(2, "Must indicate Target Eigenvalue with the -te option!");
+
+    PetscOptionsGetString(NULL, NULL, "-fp", file_prefix, PETSC_MAX_PATH_LEN-1, &flg);
+    if (!flg) early_exit(2, "Must indicate file prefix -fp option!");
+
+    std::array<std::string, 4> filenames = file_names(std::string(file_prefix));
 
     // ------------------------------------------------------------------------------------------------------------------
     // Load Matrices From Files 
@@ -48,14 +68,14 @@ int main(int argc, char* argv[]) {
     ierr = PetscViewerCreate(PETSC_COMM_WORLD, &viewer);            if (ierr) early_exit(3, "Unable to Create A Matrix");
     ierr = PetscViewerSetType(viewer, "binary");                    if (ierr) early_exit(3, "Unable to Create A Matrix");
     ierr = PetscViewerFileSetMode(viewer, FILE_MODE_READ);          if (ierr) early_exit(3, "Unable to Create A Matrix");
-    ierr = PetscViewerFileSetName(viewer, "./test_a.dat");          if (ierr) early_exit(3, "Unable to Create A Matrix");
+    ierr = PetscViewerFileSetName(viewer, &filenames[0][0]);        if (ierr) early_exit(3, "Unable to Create A Matrix");
     ierr = MatLoad(A, viewer);                                      if (ierr) early_exit(3, "Unable to Create A Matrix");
     ierr = PetscViewerDestroy(&viewer);                             if (ierr) early_exit(3, "Unable to Create A Matrix");
 
     ierr = PetscViewerCreate(PETSC_COMM_WORLD, &viewer);            if (ierr) early_exit(3, "Unable to Create B Matrix");
     ierr = PetscViewerSetType(viewer, "binary");                    if (ierr) early_exit(3, "Unable to Create B Matrix");
     ierr = PetscViewerFileSetMode(viewer, FILE_MODE_READ);          if (ierr) early_exit(3, "Unable to Create B Matrix");
-    ierr = PetscViewerFileSetName(viewer, "./test_b.dat");          if (ierr) early_exit(3, "Unable to Create B Matrix");
+    ierr = PetscViewerFileSetName(viewer, &filenames[1][0]);        if (ierr) early_exit(3, "Unable to Create B Matrix");
     ierr = MatLoad(B, viewer);                                      if (ierr) early_exit(3, "Unable to Create B Matrix");
     ierr = PetscViewerDestroy(&viewer);                             if (ierr) early_exit(3, "Unable to Create B Matrix");
 
@@ -101,10 +121,16 @@ int main(int argc, char* argv[]) {
     ierr = PetscViewerCreate(PETSC_COMM_WORLD, &viewer);            if (ierr) early_exit(8, "Unable to write Eigenvector");
     ierr = PetscViewerSetType(viewer, "binary");                    if (ierr) early_exit(8, "Unable to write Eigenvector");
     ierr = PetscViewerFileSetMode(viewer, FILE_MODE_WRITE);         if (ierr) early_exit(8, "Unable to write Eigenvector");
-    ierr = PetscViewerFileSetName(viewer, "./out_vector.dat");      if (ierr) early_exit(8, "Unable to write Eigenvector");
+    ierr = PetscViewerFileSetName(viewer, &filenames[2][0]);        if (ierr) early_exit(8, "Unable to write Eigenvector");
     ierr = VecView(xr, viewer);                                     if (ierr) early_exit(8, "Unable to write Eigenvector");
     ierr = PetscViewerDestroy(&viewer);                             if (ierr) early_exit(8, "Unable to write Eigenvector");
 
+    ierr = PetscViewerCreate(PETSC_COMM_WORLD, &viewer);            if (ierr) early_exit(8, "Unable to write Eigenvalue");
+    ierr = PetscViewerSetType(viewer, "binary");                    if (ierr) early_exit(8, "Unable to write Eigenvalue");
+    ierr = PetscViewerFileSetMode(viewer, FILE_MODE_WRITE);         if (ierr) early_exit(8, "Unable to write Eigenvalue");
+    ierr = PetscViewerFileSetName(viewer, &filenames[3][0]);        if (ierr) early_exit(8, "Unable to write Eigenvalue");
+    ierr = PetscScalarView(1, &eigenvalue_r, viewer);               if (ierr) early_exit(8, "Unable to write Eigenvalue");
+    ierr = PetscViewerDestroy(&viewer);                             if (ierr) early_exit(8, "Unable to write Eigenvalue");
 
     // ------------------------------------------------------------------------------------------------------------------
     // Cleanup
@@ -116,36 +142,4 @@ int main(int argc, char* argv[]) {
 
     SlepcFinalize();
     return 0;
-
-    // // get command line arguments
-    // PetscBool flg;
-    // PetscScalar target_eval = 1.0;
-    // PetscInt dimension = 0;     // square matrix dimensions
-    // PetscInt num_values_a = 0;  // number of values in the A Matrix
-    // PetscInt num_values_b = 0;  // number of values in the B Matrix
-    // char ab_file_names[2][PETSC_MAX_PATH_LEN]; // short unique string associated with this solution (allows multiple non-conflicting executions of this program) 
-    
-    // PetscOptionsGetScalar(NULL, NULL, "-te", &target_eval, &flg);
-    // // if (!flg) SETERRQ(2,"Must indicate target eigenvalue nonce the -te option");
-    // PetscOptionsGetInt(NULL, NULL, "-d", &dimension, &flg);
-    // // if (!flg) SETERRQ(2,"Must indicate matrix dimension with the -d option");    
-    // PetscOptionsGetInt(NULL, NULL, "-va", &num_values_a, &flg);
-    // // if (!flg) SETERRQ(2,"Must indicate the number of values in the A matrix with the -va option");   
-    // PetscOptionsGetInt(NULL, NULL, "-vb", &num_values_a, &flg);
-    // // if (!flg) SETERRQ(2,"Must indicate the number of values in the B matrix with the -vb option");   
-    // PetscOptionsGetString(NULL, "-fa", ab_file_names[0], PETSC_MAX_PATH_LEN-1, &flg);
-    // // if (!flg) SETERRQ(2,"Must indicate A matrix file name with with the -fa option");
-    // PetscOptionsGetString(NULL, "-fb", ab_file_names[1], PETSC_MAX_PATH_LEN-1, &flg);
-    // // if (!flg) SETERRQ(2,"Must indicate B matrix file name with with the -fb option");
-
-    // // // load matrix files into SEQAIJ matrices
-    // // Mat A, B;
-    // // PetscViewer pv_a, pv_b;
-    // // PetscViewerBinaryOpen(PETSC_COMM_WORLD,ab_file_names[0],FILE_MODE_READ,&pv_a);
-    // // PetscViewerBinaryOpen(PETSC_COMM_WORLD,ab_file_names[1],FILE_MODE_READ,&pv_b);
-    // // MatLoad(pv_a,MATSEQAIJ,&A);
-    // // MatLoad(pv_b,MATSEQAIJ,&B);
-    // // PetscViewerDestroy(pv_a);
-    // // PetscViewerDestroy(pv_b);
-
 }
