@@ -1,8 +1,4 @@
-#include "petscviewer.h"
 #include <slepceps.h>
-#include <petscsys.h>
-#include <petscmat.h>
-#include <mpi.h>
 
 #include <array>
 #include <string>
