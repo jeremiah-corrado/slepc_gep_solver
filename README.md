@@ -23,3 +23,6 @@ The environment variable can be set perminantly on Linux by adding the line:
 >GEP_SOLVE_DIR="the/actual/path/on/your/system/slepc_gep_solver/" 
 
 to your `.environment` file in `/etc/`
+
+If you are using this tool for any academic or commercial purpose, please site the following paper in addition to this repository:
+> ['fem_2d: A Rust Package for 2D Finite Element Method Computations with Extensive Support for *hp*-refinement'](...)
