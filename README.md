@@ -2,7 +2,7 @@
 
 A Sparse Generalized Eigenvalue Solver intended to be used with the [fem_2d library](https://github.com/jeremiah-corrado/fem_2d)
 
-## Depedancies
+## Dependencies
 
 * [CMake](https://cmake.org/)
 * [MPIch](https://www.mpich.org/)
@@ -11,7 +11,7 @@ A Sparse Generalized Eigenvalue Solver intended to be used with the [fem_2d libr
 
 Linux is highly recomended, but it should be possible to install Slepc and Petsc on Windows or Mac if needed.
 
-## Instalation
+## Installation
 
 1. Install Petsc. Follow the instructions [here](https://petsc.org/release/install/install_tutorial/)
 2. Install Slepc (an extension of Petsc). Follow the instructions in the installation section of [this](https://petsc.org/release/install/install_tutorial/) pdf
