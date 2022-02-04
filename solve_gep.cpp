@@ -100,6 +100,9 @@ int main(int argc, char* argv[]) {
     ierr = KSPGetPC(ksp, &pc);                                  if (ierr) early_exit(6, "Unable to setup KSP");
     ierr = PCSetType(pc, PCCHOLESKY);                           if (ierr) early_exit(6, "Unable to setup KSP");
 
+    ierr = EPSSetTrueResidual(eps, PETSC_TRUE);                 if (ierr) early_exit(6, "Unable to set convergence condition");
+    ierr = EPSSetConvergenceTest(eps, EPS_CONV_NORM);           if (ierr) early_exit(6, "Unable to set convergence condition");
+
     ierr = EPSSolve(eps);                                       if (ierr) early_exit(7, "Unable to Solve Eigenproblem");
 
     EPSGetConverged(eps, &nconv);
