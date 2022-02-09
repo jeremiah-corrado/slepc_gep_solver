@@ -23,7 +23,8 @@ Linux is highly recomended, but it should be possible to install Slepc and Petsc
 >GEP_SOLVE_DIR="the/actual/path/on/your/system/slepc_gep_solver/" 
 >to your `.environment` file in `/etc/`
 
-___
+
+## Citation
 
 Please include one or more of the following citations in any academic or commercial work based on this repository:
 
